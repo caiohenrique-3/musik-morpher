@@ -1,0 +1,16 @@
+<script>
+  import "../app.css";
+</script>
+
+<slot />
+
+<style>
+  :global(body) {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir,
+      segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto,
+      arial, sans-serif;
+  }
+</style>
