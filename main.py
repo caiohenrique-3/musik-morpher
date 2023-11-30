@@ -47,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Music Speed Changer")
+        self.setWindowTitle("MusikMorpher")
 
         self.layout = QtWidgets.QVBoxLayout()
 
