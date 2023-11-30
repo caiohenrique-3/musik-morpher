@@ -1,7 +1,9 @@
 <script lang="ts">
+  let isLoading = false;
   let files: FileList;
 
   async function uploadFile() {
+    isLoading = true;
     const formData = new FormData();
     formData.append("file", files[0]);
 
@@ -19,6 +21,8 @@
       }
     } catch (error) {
       console.error("An error occurred:", error);
+    } finally {
+      isLoading = false;
     }
   }
 </script>
@@ -30,8 +34,12 @@
     method="post"
     on:submit|preventDefault={uploadFile}
   >
-    <input type="file" id="mp3File" accept=".mp3" bind:files={files} />
-    <button type="submit" class="bg-white uppercase rounded p-3 mt-4">
+    <input type="file" id="mp3File" accept=".mp3" bind:files />
+    <button
+      type="submit"
+      class="bg-white uppercase rounded p-3 mt-4"
+      disabled={isLoading}
+    >
       Upload
     </button>
   </form>
