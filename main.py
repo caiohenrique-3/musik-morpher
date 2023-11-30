@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtCore
+from PyQt6 import QtWidgets, QtCore, QtGui
 import subprocess
 import os
 import sys
@@ -53,21 +53,64 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.setWindowTitle("MusikMorpher")
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2C2C2C;
+                color: #FFFFFF;
+            }
+            QLabel {
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #4CAF50; /* Green */
+                border: none;
+                color: white;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                padding: 15px 32px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QProgressBar {
+                border: 2px solid grey;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #CD5C5C;
+                width: 20px;
+            }
+        """)
 
         self.layout = QtWidgets.QVBoxLayout()
 
         self.label = QtWidgets.QLabel()
-        self.layout.addWidget(self.label)
-
-        self.tempoLabel = QtWidgets.QLabel()
-        self.layout.addWidget(self.tempoLabel)
+        self.add_widget_to_layout(self.label)
 
         self.descLabel1 = QtWidgets.QLabel()
-        self.descLabel1.setText("Song Speed")
-        self.layout.addWidget(self.descLabel1)
+        self.descLabel1.setText("SONG SPEED")
+        self.descLabel1.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.add_widget_to_layout(self.descLabel1)
 
-        self.pitch_label = QtWidgets.QLabel("Song Pitch:")
-        self.layout.addWidget(self.pitch_label)
+        self.tempoLabel = QtWidgets.QLabel()
+        self.tempoLabel.setText("Normal (unchanged)")
+        self.add_widget_to_layout(self.tempoLabel)
+
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.slider.setRange(50, 200)
+        self.slider.setValue(100)
+        self.slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.slider.valueChanged.connect(self.update_tempo_label)
+        self.add_widget_to_layout(self.slider)
+
+        self.pitch_label = QtWidgets.QLabel("SONG PITCH:")
+        self.pitch_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.add_widget_to_layout(self.pitch_label)
 
         self.pitch_combobox = QtWidgets.QComboBox()
         self.pitch_combobox.addItem("Normal (unchanged)", 1.0)
@@ -75,34 +118,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pitch_combobox.addItem("1.5", 1.5)
         self.pitch_combobox.addItem("1.75", 1.75)
         self.pitch_combobox.addItem("2.0", 2.0)
-
-        self.layout.addWidget(self.pitch_combobox)
-
-        self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
-        self.slider.setRange(50, 200)
-        self.slider.setValue(100)
-        self.slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
-        self.slider.valueChanged.connect(self.update_tempo_label)
-        self.layout.addWidget(self.slider)
+        self.add_widget_to_layout(self.pitch_combobox)
 
         self.button = QtWidgets.QPushButton("Select a song")
         self.button.clicked.connect(self.button_clicked)
-        self.layout.addWidget(self.button)
+        self.add_widget_to_layout(self.button)
 
         self.modify_button = QtWidgets.QPushButton("Modify song")
         self.modify_button.clicked.connect(self.modify_button_clicked)
-        self.layout.addWidget(self.modify_button)
+        self.add_widget_to_layout(self.modify_button)
 
         self.progress = QtWidgets.QProgressBar()
-        self.layout.addWidget(self.progress)
+        self.add_widget_to_layout(self.progress)
 
         self.widget = QtWidgets.QWidget()
         self.widget.setLayout(self.layout)
 
         self.setCentralWidget(self.widget)
 
+    def add_widget_to_layout(self, widget):
+        """Add a widget to the main layout with horizontal center alignment."""
+        h_layout = QtWidgets.QHBoxLayout()
+        h_layout.addStretch()
+        h_layout.addWidget(widget)
+        h_layout.addStretch()
+        self.layout.addLayout(h_layout)
+
     def update_tempo_label(self, value):
-        self.tempoLabel.setText(f"Song Speed: {value}%")
+        if value == 0:
+            label_text = "Normal (unchanged)"
+        else:
+            percentage_change = value - 100
+            label_text = f"Song Speed: {'+' if percentage_change > 0 else ''}{percentage_change}%"
+        self.tempoLabel.setText(label_text)
 
     def button_clicked(self):
         default_folder = os.path.expanduser("~/Music")
