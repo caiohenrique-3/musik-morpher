@@ -8,16 +8,17 @@ class SongProcessor(QtCore.QThread):
     processingFinished = QtCore.pyqtSignal()
     errorOccurred = QtCore.pyqtSignal(str)
 
-    def __init__(self, path, value):
+    def __init__(self, path, value, nightcore):
         super().__init__()
         self.path = path
         self.value = value
+        self.nightcore = nightcore
 
     def run(self):
         try:
             file_name_without_extension = QtCore.QFileInfo(
                 self.path).baseName()
-            modification_type = "Nightcore" if self.value > 100 else "Slowed Down"
+            modification_type = "Nightcore" if self.nightcore else "Slowed Down"
             new_file_name = f"{file_name_without_extension} - {modification_type}.mp3"
 
             # Check if the new file already exists, and append a number to make it unique
@@ -26,9 +27,14 @@ class SongProcessor(QtCore.QThread):
                 new_file_name = f"{file_name_without_extension} - {modification_type}_{counter}.mp3"
                 counter += 1
 
+            filters = []
+            if self.nightcore:
+                filters.append("asetrate=44100*1.25")
+            filters.append(f"atempo={self.value/100}")
+
             result = subprocess.run(
                 ['ffmpeg', '-i', self.path, '-filter:a',
-                    f"atempo={self.value/100}", new_file_name],
+                    ','.join(filters), new_file_name],
                 capture_output=True,
                 text=True
             )
@@ -57,6 +63,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tempoLabel = QtWidgets.QLabel()
         self.layout.addWidget(self.tempoLabel)
 
+        self.descLabel1 = QtWidgets.QLabel()
+        self.descLabel1.setText("Change Song Speed")
+        self.layout.addWidget(self.descLabel1)
+
+        self.nightcore_checkbox = QtWidgets.QCheckBox("Nightcore")
+        self.layout.addWidget(self.nightcore_checkbox)
+
         self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.slider.setRange(50, 200)
         self.slider.setValue(100)
@@ -81,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.widget)
 
     def update_tempo_label(self, value):
-        self.tempoLabel.setText(f"Tempo: {value}%")
+        self.tempoLabel.setText(f"Song Speed: {value}%")
 
     def button_clicked(self):
         default_folder = os.path.expanduser("~/Music")
@@ -95,9 +108,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def modify_button_clicked(self):
         value = self.slider.value()
+        nightcore = self.nightcore_checkbox.isChecked()
         if hasattr(self, 'path'):
             self.progress.setRange(0, 0)
-            self.processor = SongProcessor(self.path, value)
+            self.processor = SongProcessor(self.path, value, nightcore)
             self.processor.processingFinished.connect(
                 self.on_processing_finished)
             self.processor.errorOccurred.connect(self.on_error_occurred)
