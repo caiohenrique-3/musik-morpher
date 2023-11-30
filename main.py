@@ -5,6 +5,7 @@ import subprocess
 
 class SongProcessor(QtCore.QThread):
     processingFinished = QtCore.pyqtSignal()
+    errorOccurred = QtCore.pyqtSignal(str)
 
     def __init__(self, path, value):
         super().__init__()
@@ -12,12 +13,19 @@ class SongProcessor(QtCore.QThread):
         self.value = value
 
     def run(self):
-        file_name_without_extension = QtCore.QFileInfo(self.path).baseName()
-        modification_type = "Nightcore" if self.value > 100 else "Slowed Down"
-        new_file_name = f"{file_name_without_extension} - {modification_type}.mp3"
-        subprocess.call(['ffmpeg', '-i', self.path, '-filter:a',
-                        f"atempo={self.value/100}", new_file_name])
-        self.processingFinished.emit()
+        try:
+            file_name_without_extension = QtCore.QFileInfo(
+                self.path).baseName()
+            modification_type = "Nightcore" if self.value > 100 else "Slowed Down"
+            new_file_name = f"{file_name_without_extension} - {modification_type}.mp3"
+            result = subprocess.run(['ffmpeg', '-i', self.path, '-filter:a',
+                                    f"atempo={self.value/100}", new_file_name], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.errorOccurred.emit(result.stderr)
+            else:
+                self.processingFinished.emit()
+        except Exception as e:
+            self.errorOccurred.emit(str(e))
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -73,12 +81,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.processor = SongProcessor(self.path, value)
             self.processor.processingFinished.connect(
                 self.on_processing_finished)
+            self.processor.errorOccurred.connect(self.on_error_occurred)
             self.processor.start()
 
     @QtCore.pyqtSlot()
     def on_processing_finished(self):
         self.progress.setRange(0, 1)
         self.progress.setValue(1)
+
+    @QtCore.pyqtSlot(str)
+    def on_error_occurred(self, error_message):
+        QtWidgets.QMessageBox.critical(self, "Error", error_message)
 
 
 app = QtWidgets.QApplication(sys.argv)
