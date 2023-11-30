@@ -40,7 +40,7 @@
       class="bg-white uppercase rounded p-3 mt-4"
       disabled={isLoading}
     >
-      Upload
+      Upload!
     </button>
   </form>
 </main>
