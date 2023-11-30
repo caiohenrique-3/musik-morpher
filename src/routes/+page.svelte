@@ -1,5 +1,5 @@
-<script>
-  let files;
+<script lang="ts">
+  let files: FileList;
 
   async function uploadFile() {
     const formData = new FormData();
