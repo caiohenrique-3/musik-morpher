@@ -8,17 +8,17 @@ class SongProcessor(QtCore.QThread):
     processingFinished = QtCore.pyqtSignal()
     errorOccurred = QtCore.pyqtSignal(str)
 
-    def __init__(self, path, value, nightcore):
+    def __init__(self, path, value, pitch):
         super().__init__()
         self.path = path
         self.value = value
-        self.nightcore = nightcore
+        self.pitch = pitch
 
     def run(self):
         try:
             file_name_without_extension = QtCore.QFileInfo(
                 self.path).baseName()
-            modification_type = "Nightcore" if self.nightcore else "Slowed Down"
+            modification_type = "Nightcore" if self.pitch != 1.0 else "Slowed Down"
             new_file_name = f"{file_name_without_extension} - {modification_type}.mp3"
 
             # Check if the new file already exists, and append a number to make it unique
@@ -28,8 +28,7 @@ class SongProcessor(QtCore.QThread):
                 counter += 1
 
             filters = []
-            if self.nightcore:
-                filters.append("asetrate=44100*1.25")
+            filters.append(f"asetrate=44100*{self.pitch}")
             filters.append(f"atempo={self.value/100}")
 
             result = subprocess.run(
@@ -64,11 +63,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.layout.addWidget(self.tempoLabel)
 
         self.descLabel1 = QtWidgets.QLabel()
-        self.descLabel1.setText("Change Song Speed")
+        self.descLabel1.setText("Song Speed")
         self.layout.addWidget(self.descLabel1)
 
-        self.nightcore_checkbox = QtWidgets.QCheckBox("Nightcore")
-        self.layout.addWidget(self.nightcore_checkbox)
+        self.pitch_label = QtWidgets.QLabel("Song Pitch:")
+        self.layout.addWidget(self.pitch_label)
+
+        self.pitch_combobox = QtWidgets.QComboBox()
+        self.pitch_combobox.addItem("Normal (unchanged)", 1.0)
+        self.pitch_combobox.addItem("1.25", 1.25)
+        self.pitch_combobox.addItem("1.5", 1.5)
+        self.pitch_combobox.addItem("1.75", 1.75)
+        self.pitch_combobox.addItem("2.0", 2.0)
+
+        self.layout.addWidget(self.pitch_combobox)
 
         self.slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
         self.slider.setRange(50, 200)
@@ -108,10 +116,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def modify_button_clicked(self):
         value = self.slider.value()
-        nightcore = self.nightcore_checkbox.isChecked()
+        pitch = self.pitch_combobox.currentData()
         if hasattr(self, 'path'):
             self.progress.setRange(0, 0)
-            self.processor = SongProcessor(self.path, value, nightcore)
+            self.processor = SongProcessor(self.path, value, pitch)
             self.processor.processingFinished.connect(
                 self.on_processing_finished)
             self.processor.errorOccurred.connect(self.on_error_occurred)
