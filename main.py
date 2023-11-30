@@ -1,6 +1,7 @@
-import sys
 from PyQt6 import QtWidgets, QtCore
 import subprocess
+import os
+import sys
 
 
 class SongProcessor(QtCore.QThread):
@@ -18,13 +19,27 @@ class SongProcessor(QtCore.QThread):
                 self.path).baseName()
             modification_type = "Nightcore" if self.value > 100 else "Slowed Down"
             new_file_name = f"{file_name_without_extension} - {modification_type}.mp3"
-            result = subprocess.run(['ffmpeg', '-i', self.path, '-filter:a',
-                                    f"atempo={self.value/100}", new_file_name], capture_output=True, text=True)
+
+            # Check if the new file already exists, and append a number to make it unique
+            counter = 1
+            while os.path.exists(new_file_name):
+                new_file_name = f"{file_name_without_extension} - {modification_type}_{counter}.mp3"
+                counter += 1
+
+            result = subprocess.run(
+                ['ffmpeg', '-i', self.path, '-filter:a',
+                    f"atempo={self.value/100}", new_file_name],
+                capture_output=True,
+                text=True
+            )
+
             if result.returncode != 0:
                 self.errorOccurred.emit(result.stderr)
             else:
                 self.processingFinished.emit()
+
         except Exception as e:
+            print(f"An error occurred: {str(e)}")
             self.errorOccurred.emit(str(e))
 
 
@@ -69,8 +84,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tempoLabel.setText(f"Tempo: {value}%")
 
     def button_clicked(self):
-        self.path = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open a file', '', 'Audio files (*.mp3 *.wav)')[0]
+        default_folder = os.path.expanduser("~/Music")
+
+        self.path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open a file', default_folder, 'Audio files (*.mp3 *.wav)'
+        )
+
         if self.path:
             self.label.setText(f"Selected song: {self.path}")
 
