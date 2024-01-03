@@ -23,7 +23,7 @@ def process_song():
     print("2. Nightcore\n")
     effect = int(input("Enter your choice (1 or 2):\n> "))
 
-    speed = ask_for_song_speed()
+    speed = ask_for_song_speed(effect)
     image_url = nekos.get_random_image().url
     image_path = 'cover.jpg'
     response = requests.get(image_url)
@@ -34,7 +34,7 @@ def process_song():
 
     if effect == 1:
         os.system(
-            f'ffmpeg -i "{song_path}" -i "{image_path}" -map 0:0 -map 1:0 -filter:a "atempo=0.8,asetrate=44100*0.8" output.mp3')
+            f'ffmpeg -i "{song_path}" -filter:a "atempo=1.0,asetrate=44100*{speed}" output.mp3')
     elif effect == 2:
         os.system(
             f'ffmpeg -i "{song_path}" -i "{image_path}" -map 0:0 -map 1:0 -filter:a "atempo={speed},asetrate=44100*{speed}" output.mp3')
@@ -45,19 +45,40 @@ def process_song():
     print("Song has been processed!")
 
 
-def ask_for_song_speed():
-    speed = input(
-        "\nEnter custom speed (up to 2.0) or leave blank for default value (1.2):\n> ")
-    if speed == '':
-        speed = '1.2'
+def ask_for_song_speed(effect):
+    speed = 0.0
 
-    speed = float(speed)
+    # slowed
+    if effect == 1:
+        speed = input(
+            "\nEnter custom speed (up to 0.5) or leave blank for default value (0.9):\n> ")
 
-    if speed > 2.0:
-        speed = 2.0
+        if speed == '':
+            speed = 0.9
+        else:
+            speed = float(speed)
 
-    if speed < 1.0:
-        speed = 1.08
+        if speed < 0.5:
+            speed = 0.5
+
+        if speed == 1.0:
+            print("\nInvalid value for speed.")
+
+    # nightcore
+    else:
+        speed = input(
+            "\nEnter custom speed (up to 2.0) or leave blank for default value (1.2):\n> ")
+
+        if speed == '':
+            speed = 1.2
+        else:
+            speed = float(speed)
+
+        if speed > 2.0:
+            speed = 2.0
+
+        if speed < 1.0:
+            speed = 1.08
 
     return speed
 
